@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Zip</title>
+        <script
+                src="https://code.jquery.com/jquery-3.4.1.js"
+                integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="
+                crossorigin="anonymous">
+        </script>
+        <script src="../node_modules/file-saver/FileSaver.min.js"></script>
+        <script src="../node_modules/jszip/dist/jszip.min.js"></script>
+    </head>
+    <body>
+        <button id="download">下载</button>
+        <script>
+            $('#download').text('下载文件');
+
+            document.querySelector('#download').addEventListener('click', function (e) {
+                e.stopPropagation();
+                // /*接收数据*/
+                //NOTE  jquery 目前不支持reponseType設置成arraybuffer或者blob類型 https://blog.csdn.net/mythma/article/details/49022411
+
+                const zip = new JSZip();
+                const fileNames=['test.docx','BM.xlsx'];
+                const fileName='报告.docx';
+
+                const docPromise=function () {
+                    return new Promise(function (resolve,reject) {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', './test.docx', true);
+                        xhr.responseType = 'arraybuffer';
+                        xhr.onload = function () {
+                            if (this.status === 200) {
+                                let type = xhr.getResponseHeader('Content-Type');
+
+                                let blob = new Blob([this.response], {type: type});
+                                // // window.navigator.msSaveBlob(blob, 'doc.docx');
+                                resolve(blob);
+
+                            } else {
+                                reject(new Error('wrong'));
+                            }
+                        };
+                        xhr.send();
+                    })
+                }();
+
+                const xlxPromise=function () {
+
+                    return  new Promise(function (resolve,reject) {
+                        /*請求excel文件*/
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', './BM.xlsx', true);
+                        xhr.responseType = 'arraybuffer';
+                        xhr.onload = function () {
+                            if (this.status === 200) {
+                                debugger
+                                let type = xhr.getResponseHeader('Content-Type');
+
+                                let blob = new Blob([this.response], {type: type});
+                                resolve(blob);
+                            }else {
+                                reject(new Error('wrong'));
+                            }
+                        };
+                        xhr.send();
+                    });
+                }();
+
+
+
+                Promise.all([docPromise,xlxPromise]).then(function (values) {
+                    console.log('values',values);
+                    values.forEach(function (blob,index) {
+                        zip.file(fileNames[index],blob);
+                    });
+
+                    zip.generateAsync({type: 'blob'}).then(function (content) {
+                        // see FileSaver.js
+                        saveAs(content, 'files.zip');
+                    });
+                })
+
+            });
+        </script>
+    </body>
+</html>

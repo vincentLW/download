@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Zip</title>
+        <script
+                src="https://code.jquery.com/jquery-3.4.1.js"
+                integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="
+                crossorigin="anonymous">
+        </script>
+        <script src="../node_modules/file-saver/FileSaver.min.js"></script>
+        <script src="../node_modules/jszip/dist/jszip.min.js"></script>
+    </head>
+    <body>
+        <button id="download">下载</button>
+        <script>
+            $('#download').text('下载文件');
+
+            document.querySelector('#download').addEventListener('click', function (e) {
+                e.stopPropagation();
+                // /*接收数据*/
+                //NOTE  jquery 目前不支持reponseType設置成arraybuffer或者blob類型 https://blog.csdn.net/mythma/article/details/49022411
+
+                const zip = new JSZip();
+                const fileNames=['test.docx','BM.xlsx'];
+                const fileName='报告.docx';
+
+                const docPromise=function () {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', './test.docx', true);
+                        xhr.responseType = 'arraybuffer';
+                        xhr.onload = function () {
+                            if (this.status === 200) {
+                                let type = xhr.getResponseHeader('Content-Type');
+
+                                let blob = new Blob([this.response], {type: type});
+                                // // window.navigator.msSaveBlob(blob, 'doc.docx');
+                                // resolve(blob);
+
+                                // NOTE  有名字的下載和無名字的下載
+                                if (typeof window.navigator.msSaveBlob !== 'undefined') {
+                                    /*
+                                     * IE workaround for "HTML7007: One or more blob URLs were revoked by closing
+                                     * the blob for which they were created. These URLs will no longer resolve as
+                                     * the data backing the URL has been freed."
+                                     */
+                                    window.navigator.msSaveBlob(blob, fileName);
+                                } else {
+                                    let URL = window.URL || window.webkitURL;
+                                    let objectUrl = URL.createObjectURL(blob);
+                                    if (fileName) {
+                                        var a = document.createElement('a');
+                                        // safari doesn't support this yet
+                                        if (typeof a.download === 'undefined') {
+                                            window.location = objectUrl;
+                                        } else {
+                                            a.href = objectUrl;
+                                            a.download = fileName;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            a.remove();
+                                        }
+                                    } else {
+                                        window.location = objectUrl;
+                                    }
+                                }
+
+                            } else {
+                                reject(new Error('wrong'));
+                            }
+                        };
+                        xhr.send();
+                }();
+
+            });
+        </script>
+    </body>
+</html>
